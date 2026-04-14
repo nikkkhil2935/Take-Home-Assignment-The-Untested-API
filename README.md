@@ -210,3 +210,20 @@ See [ASSIGNMENT.md](./ASSIGNMENT.md) for full submission requirements. At minimu
 - **Bug report** — what you found, where in the code, and why it's a bug (not just symptoms)
 - **At least one fix** — with a note on your approach
 - **`PATCH /tasks/:id/assign` implementation** — plus a short explanation of any design decisions (validation, edge cases, etc.)
+
+
+## Feture 
+
+## The primary new feature added is the task assignment endpoint:
+
+- PATCH /tasks/:id/assign
+- Accepts body with assignee as a non-empty string
+- Stores assignee on the task and returns the updated task
+- Returns 404 if the task does not exist
+- Returns 409 if the task is already assigned to a different user
+- Is idempotent for the same assignee (repeating the same assign request keeps returning success)
+
+**Alongside that, we also added related enhancements:**
+
+- GET /tasks/:id for single-task fetch
+- Optional assignee filtering on GET /tasks via query params
