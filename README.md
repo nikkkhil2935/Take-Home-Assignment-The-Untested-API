@@ -59,13 +59,14 @@ ASSIGNMENT.md               # Full brief — read this first
 
 | Method   | Path                      | Description                              |
 |----------|---------------------------|------------------------------------------|
-| `GET`    | `/tasks`                  | List all tasks. Supports `?status=`, `?page=`, `?limit=` |
+| `GET`    | `/tasks`                  | List tasks. Supports `?status=`, `?assignee=`, `?page=`, `?limit=` |
+| `GET`    | `/tasks/:id`              | Get a single task by ID                  |
 | `POST`   | `/tasks`                  | Create a new task                        |
 | `PUT`    | `/tasks/:id`              | Full update of a task                    |
 | `DELETE` | `/tasks/:id`              | Delete a task (returns 204)              |
 | `PATCH`  | `/tasks/:id/complete`     | Mark a task as complete                  |
 | `GET`    | `/tasks/stats`            | Counts by status + overdue count         |
-| `PATCH`  | `/tasks/:id/assign`       | **Assign a task to a user** _(to implement)_ |
+| `PATCH`  | `/tasks/:id/assign`       | Assign a task to a user                  |
 
 ### Task shape
 
@@ -74,9 +75,10 @@ ASSIGNMENT.md               # Full brief — read this first
   "id": "uuid",
   "title": "string",
   "description": "string",
-  "status": "pending | in-progress | completed",
+  "status": "todo | in_progress | done",
   "priority": "low | medium | high",
   "dueDate": "ISO 8601 or null",
+  "assignee": "string | null",
   "completedAt": "ISO 8601 or null",
   "createdAt": "ISO 8601"
 }
@@ -93,13 +95,36 @@ curl -X POST http://localhost:3000/tasks \
 
 **List tasks with filter**
 ```bash
-curl "http://localhost:3000/tasks?status=pending&page=1&limit=10"
+curl "http://localhost:3000/tasks?status=todo&page=1&limit=10"
+```
+
+**List tasks by assignee**
+```bash
+curl "http://localhost:3000/tasks?assignee=alice"
 ```
 
 **Mark complete**
 ```bash
 curl -X PATCH http://localhost:3000/tasks/<id>/complete
 ```
+
+**Assign task**
+```bash
+curl -X PATCH http://localhost:3000/tasks/<id>/assign \
+  -H "Content-Type: application/json" \
+  -d '{"assignee":"Alice"}'
+```
+
+If a task is already assigned to a different person, `/tasks/:id/assign` returns `409 Conflict` to prevent accidental reassignment.
+
+---
+
+## Notes On Fixes
+
+This repository now includes:
+
+- `task-api/BUG_REPORT.md` with expected vs actual behavior for discovered defects
+- A complete test suite in `task-api/tests/` covering unit + integration behavior
 
 ---
 
