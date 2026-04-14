@@ -120,12 +120,15 @@ This report documents each bug found in the Task Manager API, why it happened, t
 	404 on missing task,
 	409 on reassignment to a different user,
 	idempotent success when assigning the same user again.
+	Design decision rationale:
+	409 Conflict is used for reassignment because the request conflicts with current task ownership state (rather than being a malformed payload), and repeated assignment to the same user returns success to preserve idempotency.
 - Validation added:
 	Integration tests cover happy path, empty assignee, missing task, idempotent repeat, and conflict behavior.
 
 ## 7) Additional Quality Fixes (Non-functional Defects)
 
 - Added GET /tasks/:id for direct single-task retrieval.
+- Added case-insensitive assignee filtering for GET /tasks to avoid client-casing mismatches.
 - Added consistent JSON 404 response for unknown routes.
 - Added defensive copy behavior from service methods to prevent accidental external mutation of in-memory state.
 - Added explicit comments in updated source sections for maintainability and reviewer clarity.

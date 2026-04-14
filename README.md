@@ -101,6 +101,7 @@ The API request lifecycle is:
 - `GET /tasks`
   - Applies validation before processing query values
   - Applies filtering first (`status`, then `assignee`), then pagination (`page`, `limit`)
+  - Assignee filtering is case-insensitive to tolerate client-side casing differences
 - `PUT /tasks/:id`
   - Validates request body before existence lookup
   - Ignores immutable fields (like `id` and `createdAt`) at the service layer
@@ -111,8 +112,8 @@ The API request lifecycle is:
 - `PATCH /tasks/:id/assign`
   - `400` for invalid payload
   - `404` when task does not exist
-  - `409` when already assigned to a different user
-  - `200` idempotent success when assigning to the same user
+  - `409` when already assigned to a different user (state conflict; prevents silent ownership overwrite)
+  - `200` idempotent success when assigning to the same user (repeat call does not change resource state)
 - `GET /tasks/stats`
   - Returns `todo`, `in_progress`, `done`, and `overdue`
   - Overdue count excludes tasks already marked `done`
@@ -212,7 +213,7 @@ See [ASSIGNMENT.md](./ASSIGNMENT.md) for full submission requirements. At minimu
 - **`PATCH /tasks/:id/assign` implementation** — plus a short explanation of any design decisions (validation, edge cases, etc.)
 
 
-## Feture 
+## Feature
 
 ## The primary new feature added is the task assignment endpoint:
 
@@ -222,6 +223,12 @@ See [ASSIGNMENT.md](./ASSIGNMENT.md) for full submission requirements. At minimu
 - Returns 404 if the task does not exist
 - Returns 409 if the task is already assigned to a different user
 - Is idempotent for the same assignee (repeating the same assign request keeps returning success)
+
+**Design decisions for assignment behavior:**
+
+- `409 Conflict` is used for reassignment attempts because the payload is valid, but the request conflicts with current resource ownership state.
+- Repeating assignment to the same assignee returns `200 OK` to keep the endpoint idempotent and safe for retries.
+- Assignee filtering for `GET /tasks?assignee=` is case-insensitive so clients with mixed casing still get consistent results.
 
 **Alongside that, we also added related enhancements:**
 
