@@ -36,22 +36,50 @@ npm run coverage   # run with coverage report
 
 ---
 
+## Current Status
+
+- Test suites: 4 passed
+- Tests: 47 passed
+- Coverage: 100% statements, 100% branches, 100% functions, 100% lines
+- In-memory data model with deterministic test reset support
+
+---
+
 ## Project Structure
 
 ```
+.
+  ASSIGNMENT.md
+  README.md
 task-api/
+  BUG_REPORT.md
   src/
-    app.js                  # Express app setup
-    routes/tasks.js         # Route handlers
-    services/taskService.js # Business logic + in-memory data store
-    utils/validators.js     # Input validation helpers
-  tests/                    # Your tests go here
+    app.js                     # Express app setup, middleware, error handling, startup helper
+    routes/tasks.js            # All /tasks route handlers and HTTP status mapping
+    services/taskService.js    # In-memory store + business rules
+    utils/validators.js        # Pure request/query validation functions
+  tests/
+    app.bootstrap.test.js      # startServer() behavior and logging
+    tasks.routes.test.js       # Integration tests with supertest
+    taskService.test.js        # Service unit tests
+    validators.test.js         # Validator unit tests
   package.json
   jest.config.js
-ASSIGNMENT.md               # Full brief — read this first
 ```
 
 > The data store is in-memory. It resets every time the server restarts.
+
+---
+
+## Request Flow
+
+The API request lifecycle is:
+
+1. Express app receives request in `src/app.js`
+2. `/tasks` routes dispatch in `src/routes/tasks.js`
+3. Route-level validation runs via `src/utils/validators.js`
+4. Business logic/state mutation happens in `src/services/taskService.js`
+5. Route maps service output to HTTP response codes and payloads
 
 ---
 
@@ -68,6 +96,27 @@ ASSIGNMENT.md               # Full brief — read this first
 | `GET`    | `/tasks/stats`            | Counts by status + overdue count         |
 | `PATCH`  | `/tasks/:id/assign`       | Assign a task to a user                  |
 
+### Endpoint Behavior Notes
+
+- `GET /tasks`
+  - Applies validation before processing query values
+  - Applies filtering first (`status`, then `assignee`), then pagination (`page`, `limit`)
+- `PUT /tasks/:id`
+  - Validates request body before existence lookup
+  - Ignores immutable fields (like `id` and `createdAt`) at the service layer
+- `PATCH /tasks/:id/complete`
+  - Sets `status` to `done`
+  - Sets `completedAt` when needed
+  - Preserves unrelated fields like `priority`
+- `PATCH /tasks/:id/assign`
+  - `400` for invalid payload
+  - `404` when task does not exist
+  - `409` when already assigned to a different user
+  - `200` idempotent success when assigning to the same user
+- `GET /tasks/stats`
+  - Returns `todo`, `in_progress`, `done`, and `overdue`
+  - Overdue count excludes tasks already marked `done`
+
 ### Task shape
 
 ```json
@@ -83,6 +132,12 @@ ASSIGNMENT.md               # Full brief — read this first
   "createdAt": "ISO 8601"
 }
 ```
+
+Additional model notes:
+
+- `id` and `createdAt` are treated as immutable once created
+- `dueDate` can be `null` to represent no deadline
+- `assignee` can be `null` in general update flows (unassignment)
 
 ### Sample requests
 
@@ -119,12 +174,31 @@ If a task is already assigned to a different person, `/tasks/:id/assign` returns
 
 ---
 
-## Notes On Fixes
+## Testing
+
+The suite is split by responsibility:
+
+- `tests/validators.test.js` validates pure request/query validation rules
+- `tests/taskService.test.js` validates in-memory business logic and edge cases
+- `tests/tasks.routes.test.js` validates HTTP contract and route-service integration
+- `tests/app.bootstrap.test.js` validates startup helper behavior
+
+Run commands:
+
+```bash
+cd task-api
+npm test
+npm run coverage
+```
+
+---
+
+## Bug Report
 
 This repository now includes:
 
 - `task-api/BUG_REPORT.md` with expected vs actual behavior for discovered defects
-- A complete test suite in `task-api/tests/` covering unit + integration behavior
+- Detailed root-cause analysis, impact, and fix rationale for each resolved issue
 
 ---
 
